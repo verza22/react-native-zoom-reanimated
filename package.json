@@ -1,48 +1,67 @@
 {
-  "name": "@lzurita/react-native-zoom-reanimated",
-  "version": "1.4.10",
-  "description": "Zoom component on react-native + react-native-reanimated + react-native-gesture-handler",
-  "keywords": [
-    "zoom",
-    "react-native",
-    "react-native-reanimated",
-    "react-native-gesture-handler"
-  ],
-  "homepage": "https://github.com/kesha-antonov/react-native-zoom-reanimated",
-  "repository": {
-    "type": "git",
-    "url": "react-native-zoom-reanimated"
-  },
-  "license": "MIT",
-  "author": "Kesha Antonov",
-  "main": "src/index.tsx",
-  "files": [
-    "README.md",
-    "LICENSE",
-    "package.json",
-    "src/"
-  ],
-  "scripts": {
-    "autofix": "eslint -c .eslintrc.js --ext .ts,.tsx --fix .",
-    "bump": "npm version patch",
-    "lint": "eslint -c .eslintrc.js --ext .ts,.tsx .",
-    "publish": "npm publish",
-    "_prepublishOnly": "jest && npm run lint",
-    "test": "jest"
-  },
-  "devDependencies": {
-    "@react-native-community/eslint-config": "^3.2.0",
-    "@types/react": "^18.2.45 || ^19.0.0",
-    "@types/react-native": "^0.72.8",
-    "eslint": "^8.56.0",
-    "eslint-plugin-import": "^2.29.1",
-    "jest": "^29.7.0",
-    "react-native-gesture-handler": "^2.14.0",
-    "react-native-reanimated": "^3.6.1",
-    "typescript": "^5.3.3"
-  },
-  "peerDependencies": {
-    "react-native-gesture-handler": "*",
-    "react-native-reanimated": ">=2.0.0"
-  }
+    "name": "@lzurita/react-native-zoom-reanimated",
+    "version": "1.5.2",
+    "type": "module",
+    "description": "Smooth pinch-to-zoom component for React Native with Apple Photos-style gestures and rubber-band physics",
+    "keywords": [
+        "react-native",
+        "zoom",
+        "pinch-to-zoom",
+        "pan",
+        "gesture",
+        "image-viewer",
+        "photo-viewer",
+        "gallery",
+        "reanimated",
+        "gesture-handler",
+        "ios",
+        "android"
+    ],
+    "homepage": "https://github.com/kesha-antonov/react-native-zoom-reanimated",
+    "repository": {
+        "type": "git",
+        "url": "react-native-zoom-reanimated"
+    },
+    "license": "MIT",
+    "author": "Kesha Antonov",
+    "main": "src/index.tsx",
+    "files": [
+        "README.md",
+        "LICENSE",
+        "package.json",
+        "src/"
+    ],
+    "scripts": {
+        "autofix": "eslint --fix .",
+        "bump": "npm version patch",
+        "lint": "eslint .",
+        "publish": "npm publish",
+        "prepublishOnly": "yarn test && npm run lint",
+        "test": "cd example && jest",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.2",
+        "@stylistic/eslint-plugin": "^5.7.0",
+        "@types/react": "^19.2.8",
+        "@types/react-native": "^0.73.0",
+        "eslint": "^9.39.2",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^7.0.1",
+        "husky": "^9.1.7",
+        "jest": "^30.2.0",
+        "lint-staged": "^16.2.7",
+        "react-native-gesture-handler": "^2.30.0",
+        "react-native-reanimated": "^3.19.5",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.53.1"
+    },
+    "peerDependencies": {
+        "react-native-gesture-handler": ">= 2.0.0",
+        "react-native-reanimated": ">=3.0.0"
+    },
+    "lint-staged": {
+        "*.{ts,tsx}": "eslint --fix"
+    }
 }

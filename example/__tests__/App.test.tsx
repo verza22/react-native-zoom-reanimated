@@ -2,16 +2,36 @@
  * @format
  */
 
-import 'react-native';
-import React from 'react';
-import App from '../App';
+import React from 'react'
+import { it, expect, describe } from '@jest/globals'
+import { render, screen, fireEvent } from '@testing-library/react-native'
 
-// Note: import explicitly to use the types shipped with jest.
-import {it} from '@jest/globals';
+import App from '../App'
 
-// Note: test renderer must be required after react-native.
-import renderer from 'react-test-renderer';
+describe('Example App', () => {
+  it('renders the main menu correctly', () => {
+    render(<App />)
 
-it('renders correctly', () => {
-  renderer.create(<App />);
-});
+    // Verify the app renders
+    expect(screen.root).toBeTruthy()
+  })
+
+  it('displays menu buttons', () => {
+    render(<App />)
+
+    // Should have menu items
+    expect(screen.getByText('Basic Example')).toBeTruthy()
+    expect(screen.getByText('Gallery Example')).toBeTruthy()
+  })
+
+  it('can navigate to basic example', () => {
+    render(<App />)
+
+    // Find and press the Basic Example button
+    const basicButton = screen.getByText('Basic Example')
+    fireEvent.press(basicButton)
+
+    // App should still render without crashing
+    expect(screen.root).toBeTruthy()
+  })
+})
