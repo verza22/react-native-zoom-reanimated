@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useCallback, useMemo, useRef } from 'react'
+import React, { PropsWithChildren, useCallback, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
 import {
   LayoutChangeEvent,
   StyleProp,
@@ -35,6 +35,10 @@ import styles from './styles'
 
 export type AnimationConfigProps = Parameters<typeof withTiming>[1];
 
+export interface ZoomRef {
+  disableDoubleTap: () => void;
+}
+
 interface UseZoomGestureProps {
   animationFunction?: typeof withTiming;
   animationConfig?: AnimationConfigProps;
@@ -43,6 +47,7 @@ interface UseZoomGestureProps {
     minZoomScale?: number;
     maxZoomScale?: number;
   };
+  isDoubleTapDisabledRef?: React.MutableRefObject<boolean>;
 }
 
 export function useZoomGesture(props: UseZoomGestureProps = {}): {
@@ -58,6 +63,7 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
     animationFunction = withTiming,
     animationConfig,
     doubleTapConfig,
+    isDoubleTapDisabledRef,
   } = props
 
   const baseScale = useSharedValue(1)
@@ -213,9 +219,13 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
   ])
 
   const onDoubleTap = useCallback((focalX: number, focalY: number): void => {
-    if (isZoomedIn.value) zoomOut()
-    else zoomIn(focalX, focalY)
-  }, [zoomIn, zoomOut, isZoomedIn])
+    setTimeout(()=>{
+        if (isDoubleTapDisabledRef?.current) return;
+        
+        if (isZoomedIn.value) zoomOut()
+        else zoomIn(focalX, focalY)
+    },40)
+  }, [zoomIn, zoomOut, isZoomedIn, isDoubleTapDisabledRef])
 
   const onLayout = useCallback(
     ({
@@ -283,8 +293,6 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
       .activeOffsetX([-20, 20])
       .onTouchesMove(
         (e: GestureTouchEvent, state: GestureStateManagerType): void => {
-          // Si el usuario pone 2 dedos, forzamos la activación del gesto para
-          // bloquear al FlatList y permitir que el Pinch funcione perfecto.
           if (([State.UNDETERMINED, State.BEGAN] as State[]).includes(e.state)) {
             if (e.numberOfTouches >= 2) {
               state.activate()
@@ -415,10 +423,41 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
   }
 }
 
-export default function Zoom(
-  props: PropsWithChildren<ZoomProps>
-): React.JSX.Element {
+export interface ZoomProps {
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  animationConfig?: AnimationConfigProps;
+  onZoomStateChange?: (isZoomedIn: boolean) => void;
+  doubleTapConfig?: {
+    defaultScale?: number;
+    minZoomScale?: number;
+    maxZoomScale?: number;
+  };
+  animationFunction?<T extends AnimatableValue>(
+    toValue: T,
+    userConfig?: AnimationConfigProps,
+    callback?: AnimationCallback,
+  ): T;
+}
+
+const Zoom = forwardRef<ZoomRef, PropsWithChildren<ZoomProps>>((props, ref) => {
   const { style, contentContainerStyle, children, onZoomStateChange, ...rest } = props
+
+  const isDoubleTapDisabledRef = useRef(false);
+  const disableTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useImperativeHandle(ref, () => ({
+    disableDoubleTap: () => {
+      isDoubleTapDisabledRef.current = true;
+      if (disableTimeoutRef.current) {
+        clearTimeout(disableTimeoutRef.current);
+      }
+      disableTimeoutRef.current = setTimeout(() => {
+        isDoubleTapDisabledRef.current = false;
+      }, 100);
+    }
+  }));
+
   const {
     zoomGesture,
     onLayout,
@@ -427,6 +466,7 @@ export default function Zoom(
     isZoomedIn,
   } = useZoomGesture({
     ...rest,
+    isDoubleTapDisabledRef,
   })
 
   useAnimatedReaction(
@@ -458,21 +498,6 @@ export default function Zoom(
       </GestureDetector>
     </GestureHandlerRootView>
   )
-}
+})
 
-export interface ZoomProps {
-  style?: StyleProp<ViewStyle>;
-  contentContainerStyle?: StyleProp<ViewStyle>;
-  animationConfig?: AnimationConfigProps;
-  onZoomStateChange?: (isZoomedIn: boolean) => void;
-  doubleTapConfig?: {
-    defaultScale?: number;
-    minZoomScale?: number;
-    maxZoomScale?: number;
-  };
-  animationFunction?<T extends AnimatableValue>(
-    toValue: T,
-    userConfig?: AnimationConfigProps,
-    callback?: AnimationCallback,
-  ): T;
-}
+export default Zoom;
