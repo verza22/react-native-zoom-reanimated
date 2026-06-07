@@ -32,11 +32,15 @@ import Animated, {
 import { MAX_SCALE, MIN_SCALE } from './constants'
 import { clampScale, getScaleFromDimensions } from './utils'
 import styles from './styles'
+import { runOnUI } from 'react-native-reanimated';
 
 export type AnimationConfigProps = Parameters<typeof withTiming>[1];
 
 export interface ZoomRef {
   disableDoubleTap: () => void;
+  zoomTo: (x: number, y: number, scale: number) => void;
+  zoomOut: () => void;
+  zoomIn: () => void;
 }
 
 interface UseZoomGestureProps {
@@ -58,6 +62,8 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
   zoomOut(): void;
   isZoomedIn: SharedValue<boolean>;
   zoomGestureLastTime: SharedValue<number>;
+  zoomTo(x: number, y: number, scale: number, animated?: boolean): void;
+  zoomIn(focalX?: number, focalY?: number): void;
 } {
   const {
     animationFunction = withTiming,
@@ -183,6 +189,53 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
     withAnimation,
     focalOffsetX,
     focalOffsetY,
+  ])
+
+  const zoomTo = useCallback((x: number, y: number, scale: number, animated: boolean = true): void => {
+    const clampedScale = clampScale(
+      scale,
+      doubleTapConfig?.minZoomScale ?? MIN_SCALE,
+      doubleTapConfig?.maxZoomScale ?? MAX_SCALE
+    )
+
+    const newOffsetX = (containerDimensions.value.width / 2) - x;
+    const newOffsetY = (containerDimensions.value.height / 2) - y;
+
+    if (animated) {
+      lastScale.value = clampedScale;
+      lastOffsetX.value = newOffsetX;
+      lastOffsetY.value = newOffsetY;
+
+      baseScale.value = withAnimation(clampedScale);
+      pinchScale.value = withAnimation(1);
+      translateX.value = withAnimation(newOffsetX);
+      translateY.value = withAnimation(newOffsetY);
+      
+      focalOffsetX.value = 0;
+      focalOffsetY.value = 0;
+      isZoomedIn.value = true;
+    } else {
+      // Execute instantly directly on the UI thread
+      runOnUI(() => {
+        'worklet';
+        lastScale.value = clampedScale;
+        lastOffsetX.value = newOffsetX;
+        lastOffsetY.value = newOffsetY;
+        
+        baseScale.value = clampedScale;
+        pinchScale.value = 1;
+        translateX.value = newOffsetX;
+        translateY.value = newOffsetY;
+        
+        focalOffsetX.value = 0;
+        focalOffsetY.value = 0;
+        isZoomedIn.value = true;
+      })();
+    }
+  }, [
+    baseScale, pinchScale, lastOffsetX, lastOffsetY, translateX, translateY,
+    isZoomedIn, lastScale, containerDimensions, withAnimation, doubleTapConfig,
+    focalOffsetX, focalOffsetY
   ])
 
   const handlePanOutside = useCallback((): void => {
@@ -420,6 +473,8 @@ export function useZoomGesture(props: UseZoomGestureProps = {}): {
     zoomOut,
     isZoomedIn,
     zoomGestureLastTime,
+    zoomTo,
+    zoomIn
   }
 }
 
@@ -455,7 +510,16 @@ const Zoom = forwardRef<ZoomRef, PropsWithChildren<ZoomProps>>((props, ref) => {
       disableTimeoutRef.current = setTimeout(() => {
         isDoubleTapDisabledRef.current = false;
       }, 100);
-    }
+    },
+    zoomTo: (x: number, y: number, scale: number, animated?: boolean) => {
+      zoomTo(x, y, scale);
+    },
+    zoomOut: () => {
+      zoomOut();
+    },
+    zoomIn: () => {
+      zoomIn();
+    },
   }));
 
   const {
@@ -464,6 +528,9 @@ const Zoom = forwardRef<ZoomRef, PropsWithChildren<ZoomProps>>((props, ref) => {
     onLayoutContent,
     contentContainerAnimatedStyle,
     isZoomedIn,
+    zoomTo,
+    zoomOut,
+    zoomIn
   } = useZoomGesture({
     ...rest,
     isDoubleTapDisabledRef,
